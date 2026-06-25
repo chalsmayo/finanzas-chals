@@ -155,6 +155,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <button class="bp" onclick="connectSupabase()">Conectar</button>
 <div style="margin-top:8px"><button class="bp bs" onclick="disconnectSupabase()">Desconectar</button></div>
 </div>
+<div class="sc">
+<div class="st2">&#x1F3F7;&#xFE0F; Categor&#xED;as</div>
+<div class="sd2">A&#xF1;ade o elimina categor&#xED;as de gastos e ingresos.</div>
+<div style="display:flex;gap:6px;margin-bottom:10px">
+<button class="fbtn active" id="catTabG" onclick="showCatManager('Gasto')" style="flex:1;text-align:center">Gastos</button>
+<button class="fbtn" id="catTabI" onclick="showCatManager('Ingreso')" style="flex:1;text-align:center">Ingresos</button>
+</div>
+<div id="catManager"></div>
+<div style="display:flex;gap:6px;margin-top:10px">
+<input class="fi" id="newCatName" type="text" placeholder="Nombre" style="flex:1;padding:9px 12px;font-size:13px">
+<input class="fi" id="newCatEmoji" type="text" placeholder="&#x1F4CC;" style="width:50px;padding:9px 8px;font-size:13px;text-align:center">
+<button class="bp" onclick="addCategory()" style="width:auto;padding:10px 16px;margin-top:0;font-size:13px">+</button>
+</div>
+</div>
 <div class="sc"><div class="st2">&#x1F4BE; Exportar</div><div class="sd2">Descarga un backup de tus transacciones.</div><button class="bp bs" onclick="exportData()">&#x1F4E5; Exportar JSON</button></div>
 <div class="sc"><div class="st2">&#x1F4C2; Importar</div><div class="sd2">Carga transacciones desde un JSON exportado.</div><input type="file" id="impF" accept=".json" style="display:none" onchange="importData(event)"><button class="bp bs" onclick="document.getElementById('impF').click()">&#x1F4E4; Importar JSON</button></div>
 <div class="sc" style="border-color:rgba(239,68,68,.2)"><div class="st2">&#x1F5D1;&#xFE0F; Borrar locales</div><div class="sd2">Elimina las transacciones a&#xF1;adidas manualmente.</div><button class="bp" style="background:var(--red)" onclick="clearLocal()">Borrar datos locales</button></div>
@@ -175,9 +189,50 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 </div>
 <script>
-const EXPENSE_CATEGORIES=["Comidas","Ocio","Ropa","Compras","Tabaco","Gasolina","Ahorros","Fondos Indexados","Netflix","Dientes","Padres","Claude Pro","Barbería / Esteticien","Otro"];
-const INCOME_CATEGORIES=["Nomina","DJ","Vinted","Ahorros","Otro"];
-const EMOJI_MAP={"Nomina":"💼","Ahorros":"🏦","Fondos Indexados":"📈","Vinted":"👕","DJ":"🎧","Padres":"👪","Maca":"❤️","Netflix":"📺","Crunchyroll":"🀄","Ocio":"🎉","Ropa":"👟","Gasolina":"⛽","Comidas":"🍔","Tabaco":"🚬","Compras":"🛒","Gym":"💪","Dientes":"🦷","Otro":"📌","Suscripciones":"🔔","TryHackMe":"💻","GhatGpt Plus":"🤖","Claude Pro":"🤖","Barbería / Esteticien":"✂️"};
+const DEFAULT_EXPENSE_CATS=["Comidas","Ocio","Ropa","Compras","Tabaco","Gasolina","Ahorros","Fondos Indexados","Netflix","Dientes","Padres","Claude Pro","Barbería / Esteticien","Otro"];
+const DEFAULT_INCOME_CATS=["Nomina","DJ","Vinted","Ahorros","Otro"];
+const DEFAULT_EMOJIS={"Nomina":"💼","Ahorros":"🏦","Fondos Indexados":"📈","Vinted":"👕","DJ":"🎧","Padres":"👪","Maca":"❤️","Netflix":"📺","Crunchyroll":"🀄","Ocio":"🎉","Ropa":"👟","Gasolina":"⛽","Comidas":"🍔","Tabaco":"🚬","Compras":"🛒","Gym":"💪","Dientes":"🦷","Otro":"📌","Suscripciones":"🔔","TryHackMe":"💻","GhatGpt Plus":"🤖","Claude Pro":"🤖","Barbería / Esteticien":"✂️"};
+function loadCategories(){
+  const saved=localStorage.getItem("fc_cats");
+  if(saved){const d=JSON.parse(saved);return d;}
+  return{expense:[...DEFAULT_EXPENSE_CATS],income:[...DEFAULT_INCOME_CATS],emojis:{...DEFAULT_EMOJIS}};
+}
+function saveCategories(cats){localStorage.setItem("fc_cats",JSON.stringify(cats));}
+function getCats(){return loadCategories();}
+let catManagerType="Gasto";
+function showCatManager(tipo){
+  catManagerType=tipo;
+  document.getElementById("catTabG").className="fbtn"+(tipo==="Gasto"?" active":"");
+  document.getElementById("catTabI").className="fbtn"+(tipo==="Ingreso"?" active":"");
+  const cats=getCats();
+  const list=tipo==="Gasto"?cats.expense:cats.income;
+  let h="";
+  list.forEach((c,i)=>{
+    h+=`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:16px">${cats.emojis[c]||"📌"}</span><span style="flex:1;font-size:13px">${c}</span><button class="mcls" onclick="removeCategory(${i})" style="width:26px;height:26px;font-size:12px">✕</button></div>`;
+  });
+  document.getElementById("catManager").innerHTML=h;
+}
+function addCategory(){
+  const name=document.getElementById("newCatName").value.trim();
+  const emoji=document.getElementById("newCatEmoji").value.trim()||"📌";
+  if(!name)return;
+  const cats=getCats();
+  const list=catManagerType==="Gasto"?cats.expense:cats.income;
+  if(list.includes(name))return;
+  list.push(name);
+  cats.emojis[name]=emoji;
+  saveCategories(cats);
+  document.getElementById("newCatName").value="";
+  document.getElementById("newCatEmoji").value="";
+  showCatManager(catManagerType);
+}
+function removeCategory(idx){
+  const cats=getCats();
+  const list=catManagerType==="Gasto"?cats.expense:cats.income;
+  list.splice(idx,1);
+  saveCategories(cats);
+  showCatManager(catManagerType);
+}
 const CHART_COLORS=["#6366f1","#f59e0b","#ef4444","#10b981","#3b82f6","#8b5cf6","#ec4899","#14b8a6","#f97316","#84cc16","#06b6d4","#a855f7","#fb7185","#34d399","#60a5fa"];
 const MONTH_NAMES=["","Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 let currentYear,currentMonth,currentFilter="all",selectedType="Gasto",localTx=[],sbClient=null,monthlyChart=null,pieChartExpenses=null,pieChartIncome=null,editingId=null;
@@ -187,7 +242,7 @@ function getAllTransactions(){return[...localTx].sort((a,b)=>b.fecha.localeCompa
 function getMonthTransactions(y,m){const p=`${y}-${String(m).padStart(2,"0")}`;return getAllTransactions().filter(t=>t.fecha.startsWith(p));}
 function formatEuro(v){return v.toLocaleString("es-ES",{style:"currency",currency:"EUR"});}
 function formatDate(s){return new Date(s+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"});}
-function getEmoji(c){return EMOJI_MAP[c]||"📌";}
+function getEmoji(c){return getCats().emojis[c]||DEFAULT_EMOJIS[c]||"📌";}
 function prevMonth(){currentMonth--;if(currentMonth<1){currentMonth=12;currentYear--;}render();}
 function nextMonth(){currentMonth++;if(currentMonth>12){currentMonth=1;currentYear++;}render();}
 let activeTab="txs";
@@ -201,6 +256,7 @@ function switchTab(n,btn){
   if(n==="gst")renderExpenses();
   if(n==="ing")renderIncome();
   if(n==="ev")renderEvolution();
+  if(n==="cfg")showCatManager(catManagerType);
 }
 function setFilter(t,btn){currentFilter=t;document.querySelectorAll(".fbtn").forEach(b=>b.classList.remove("active"));btn.classList.add("active");renderTransactions();}
 function render(){
@@ -335,7 +391,7 @@ function selectType(t){
     fgCat.style.display="none";
   }else{
     fgCat.style.display="";
-    const cats=t==="Ingreso"?INCOME_CATEGORIES:EXPENSE_CATEGORIES;
+    const c=getCats();const cats=t==="Ingreso"?c.income:c.expense;
     document.getElementById("fC").innerHTML=cats.map(c=>`<option value="${c}">${getEmoji(c)} ${c}</option>`).join("");
   }
 }
