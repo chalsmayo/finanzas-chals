@@ -163,13 +163,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="ovl" id="ovl" onclick="closeOverlay(event)">
 <div class="modal">
 <div class="mhdl"></div>
-<div class="mtit">Nueva transacci&#xF3;n<button class="mcls" onclick="closeModal()">&#x2715;</button></div>
+<div class="mtit"><span id="modalTitle">Nueva transacci&#xF3;n</span><button class="mcls" onclick="closeModal()">&#x2715;</button></div>
 <div class="fg"><label class="fl">Tipo</label><div class="tt"><button class="tb active g" id="bG" onclick="selectType('Gasto')">&#x1F4B8; Gasto</button><button class="tb i" id="bI" onclick="selectType('Ingreso')">&#x1F4B0; Ingreso</button><button class="tb ah" id="bA" onclick="selectType('Ahorro')">&#x1F3E6; Ahorro</button><button class="tb iv" id="bV" onclick="selectType('Inversion')">&#x1F4C8; Inversi&#xF3;n</button></div></div>
 <div class="fg"><label class="fl">Cantidad (&#x20AC;)</label><input class="fi" id="fA" type="number" step="0.01" min="0.01" placeholder="0,00" inputmode="decimal"/></div>
 <div class="fg" id="fgCat"><label class="fl">Categor&#xED;a</label><select class="fs" id="fC"></select></div>
 <div class="fg"><label class="fl">Fecha</label><input class="fi" id="fD" type="date"/></div>
 <div class="fg"><label class="fl">Descripci&#xF3;n (opcional)</label><input class="fi" id="fDesc" type="text" placeholder="Que fue?"/></div>
-<button class="bp" onclick="saveTransaction()">Guardar</button>
+<button class="bp" id="btnSave" onclick="saveTransaction()">Guardar</button>
 </div>
 </div>
 <script>
@@ -178,7 +178,7 @@ const INCOME_CATEGORIES=["Nomina","DJ","Vinted","Ahorros","Otro"];
 const EMOJI_MAP={"Nomina":"💼","Ahorros":"🏦","Fondos Indexados":"📈","Vinted":"👕","DJ":"🎧","Padres":"👪","Maca":"❤️","Netflix":"📺","Crunchyroll":"🀄","Ocio":"🎉","Ropa":"👟","Gasolina":"⛽","Comidas":"🍔","Tabaco":"🚬","Compras":"🛒","Gym":"💪","Dientes":"🦷","Otro":"📌","Suscripciones":"🔔","TryHackMe":"💻","GhatGpt Plus":"🤖","Claude Pro":"🤖","Barbería / Esteticien":"✂️"};
 const CHART_COLORS=["#6366f1","#f59e0b","#ef4444","#10b981","#3b82f6","#8b5cf6","#ec4899","#14b8a6","#f97316","#84cc16","#06b6d4","#a855f7","#fb7185","#34d399","#60a5fa"];
 const MONTH_NAMES=["","Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-let currentYear,currentMonth,currentFilter="all",selectedType="Gasto",localTx=[],sbClient=null,monthlyChart=null,pieChartExpenses=null,pieChartIncome=null;
+let currentYear,currentMonth,currentFilter="all",selectedType="Gasto",localTx=[],sbClient=null,monthlyChart=null,pieChartExpenses=null,pieChartIncome=null,editingId=null;
 function loadLocal(){try{const r=localStorage.getItem("fc_v2");if(r)localTx=JSON.parse(r);}catch(e){localTx=[];}}
 function saveLocal(){localStorage.setItem("fc_v2",JSON.stringify(localTx));}
 function getAllTransactions(){return[...localTx].sort((a,b)=>b.fecha.localeCompare(a.fecha));}
@@ -228,7 +228,7 @@ function renderTransactions(){
       const cls=t.tipo==="Ingreso"?"inc":"exp";
       const sign=t.tipo==="Ingreso"?"+":"-";
       const del=t.sb_id?`<button class="txdel" onclick="deleteTransaction('${t.sb_id}',event)">&#x2715;</button>`:"";
-      h+=`<div class="txi"><div class="txic ${cls}">${getEmoji(t.categoria)}</div><div class="txinfo"><div class="txcat">${t.categoria}</div><div class="txdesc">${t.descripcion||t.categoria}</div></div><div class="txr"><div class="txamt ${cls}">${sign}${formatEuro(t.cantidad)}</div></div>${del}</div>`;
+      h+=`<div class="txi" onclick="editTransaction('${t.sb_id}')" style="cursor:pointer"><div class="txic ${cls}">${getEmoji(t.categoria)}</div><div class="txinfo"><div class="txcat">${t.categoria}</div><div class="txdesc">${t.descripcion||t.categoria}</div></div><div class="txr"><div class="txamt ${cls}">${sign}${formatEuro(t.cantidad)}</div></div>${del}</div>`;
     });
   });
   list.innerHTML=h;
@@ -302,7 +302,24 @@ function renderEvolution(){
     {label:"Fondos Indexados",data:am.map(ym=>{const[y,m]=ym.split("-").map(Number);const mt=getMonthTransactions(y,m);return mt.filter(t=>t.tipo==="Gasto"&&t.categoria==="Fondos Indexados").reduce((s,t)=>s+t.cantidad,0)-mt.filter(t=>t.tipo==="Ingreso"&&t.categoria==="Fondos Indexados").reduce((s,t)=>s+t.cantidad,0);}),backgroundColor:"rgba(14,165,233,.7)",borderRadius:4}
   ]},options:{responsive:true,plugins:{legend:{labels:{color:"#94a3b8",font:{size:11}}}},scales:{x:{ticks:{color:"#94a3b8",font:{size:10}},grid:{color:"rgba(255,255,255,.04)"}},y:{ticks:{color:"#94a3b8",font:{size:10},callback:v=>"€"+Math.round(v)},grid:{color:"rgba(255,255,255,.04)"}}}}});
 }
-function openModal(){document.getElementById("fD").value=new Date().toISOString().split("T")[0];document.getElementById("fA").value="";document.getElementById("fDesc").value="";selectType("Gasto");document.getElementById("ovl").classList.add("show");setTimeout(()=>document.getElementById("fA").focus(),350);}
+function openModal(){editingId=null;document.getElementById("modalTitle").textContent="Nueva transacción";document.getElementById("btnSave").textContent="Guardar";document.getElementById("fD").value=new Date().toISOString().split("T")[0];document.getElementById("fA").value="";document.getElementById("fDesc").value="";selectType("Gasto");document.getElementById("ovl").classList.add("show");setTimeout(()=>document.getElementById("fA").focus(),350);}
+function editTransaction(sid){
+  const tx=localTx.find(t=>String(t.sb_id)===String(sid));
+  if(!tx)return;
+  editingId=sid;
+  document.getElementById("modalTitle").textContent="Editar transacción";
+  document.getElementById("btnSave").textContent="Actualizar";
+  let uiType="Gasto";
+  if(tx.categoria==="Ahorros")uiType="Ahorro";
+  else if(tx.categoria==="Fondos Indexados")uiType="Inversion";
+  else if(tx.tipo==="Ingreso")uiType="Ingreso";
+  selectType(uiType);
+  if(uiType!=="Ahorro"&&uiType!=="Inversion")document.getElementById("fC").value=tx.categoria;
+  document.getElementById("fA").value=tx.cantidad;
+  document.getElementById("fD").value=tx.fecha;
+  document.getElementById("fDesc").value=tx.descripcion||"";
+  document.getElementById("ovl").classList.add("show");
+}
 function closeModal(){document.getElementById("ovl").classList.remove("show");}
 function closeOverlay(e){if(e.target.id==="ovl")closeModal();}
 function selectType(t){
@@ -329,15 +346,26 @@ async function saveTransaction(){
   let txTipo=selectedType,txCat=cat;
   if(selectedType==="Ahorro"){txTipo="Gasto";txCat="Ahorros";}
   else if(selectedType==="Inversion"){txTipo="Gasto";txCat="Fondos Indexados";}
-  let qty=1,realDesc=desc;
-  const qMatch=desc.match(/^(\d+)\s+(.+)$/);
-  if(qMatch&&parseInt(qMatch[1])>1){qty=parseInt(qMatch[1]);realDesc=qMatch[2];}
-  const unitAmt=Math.round((amt/qty)*100)/100;
-  for(let i=0;i<qty;i++){
-    const tx={tipo:txTipo,categoria:txCat,cantidad:unitAmt,fecha:date,descripcion:realDesc};
-    if(sbClient){try{const{data,error}=await sbClient.from("transactions").insert([tx]).select();if(error)throw error;tx.sb_id=data[0].id;}catch(e){alert("Error Supabase: "+e.message);return;}}
-    else{tx.sb_id="local_"+(Date.now()+i);}
-    localTx.push(tx);
+  if(editingId){
+    const updated={tipo:txTipo,categoria:txCat,cantidad:amt,fecha:date,descripcion:desc};
+    if(sbClient&&!String(editingId).startsWith("local_")){
+      try{const{error}=await sbClient.from("transactions").update(updated).eq("id",editingId);if(error)throw error;}
+      catch(e){alert("Error Supabase: "+e.message);return;}
+    }
+    const idx=localTx.findIndex(t=>String(t.sb_id)===String(editingId));
+    if(idx>=0)Object.assign(localTx[idx],updated);
+    editingId=null;
+  }else{
+    let qty=1,realDesc=desc;
+    const qMatch=desc.match(/^(\d+)\s+(.+)$/);
+    if(qMatch&&parseInt(qMatch[1])>1){qty=parseInt(qMatch[1]);realDesc=qMatch[2];}
+    const unitAmt=Math.round((amt/qty)*100)/100;
+    for(let i=0;i<qty;i++){
+      const tx={tipo:txTipo,categoria:txCat,cantidad:unitAmt,fecha:date,descripcion:realDesc};
+      if(sbClient){try{const{data,error}=await sbClient.from("transactions").insert([tx]).select();if(error)throw error;tx.sb_id=data[0].id;}catch(e){alert("Error Supabase: "+e.message);return;}}
+      else{tx.sb_id="local_"+(Date.now()+i);}
+      localTx.push(tx);
+    }
   }
   saveLocal();closeModal();
   const d=new Date(date+"T12:00:00");currentYear=d.getFullYear();currentMonth=d.getMonth()+1;render();
