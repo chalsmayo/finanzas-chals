@@ -130,6 +130,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div id="txL" class="txlist"></div>
 </div>
 <div id="t-gst" class="tp">
+<div class="cc" id="budgetSection" style="display:none"><div class="ct">&#x1F4AF; Presupuestos</div><div id="budgetList"></div></div>
 <div class="cc"><div class="ct">&#x1F4B8; Gastos por categor&#xED;a</div><div id="catBG"></div></div>
 <div class="cc"><div class="ct">&#x1F967; Distribuci&#xF3;n gastos</div><canvas id="pChG" height="220"></canvas></div>
 </div>
@@ -207,8 +208,10 @@ function showCatManager(tipo){
   const cats=getCats();
   const list=tipo==="Gasto"?cats.expense:cats.income;
   let h="";
+  const budgets=loadBudgets();
   list.forEach((c,i)=>{
-    h+=`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:16px">${cats.emojis[c]||"📌"}</span><span style="flex:1;font-size:13px">${c}</span><button class="mcls" onclick="removeCategory(${i})" style="width:26px;height:26px;font-size:12px">✕</button></div>`;
+    const budgetHtml=tipo==="Gasto"?`<input class="fi" type="number" value="${budgets[c]||''}" placeholder="—" onchange="setBudget('${c}',parseFloat(this.value)||0)" style="width:60px;padding:5px 6px;font-size:11px;text-align:center">`:""
+    h+=`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:16px">${cats.emojis[c]||"📌"}</span><span style="flex:1;font-size:13px">${c}</span>${budgetHtml}<button class="mcls" onclick="removeCategory(${i})" style="width:26px;height:26px;font-size:12px">✕</button></div>`;
   });
   document.getElementById("catManager").innerHTML=h;
 }
@@ -233,6 +236,9 @@ function removeCategory(idx){
   saveCategories(cats);
   showCatManager(catManagerType);
 }
+function loadBudgets(){try{return JSON.parse(localStorage.getItem("fc_budgets"))||{};}catch(e){return{};}}
+function saveBudgets(b){localStorage.setItem("fc_budgets",JSON.stringify(b));}
+function setBudget(cat,val){const b=loadBudgets();if(val>0)b[cat]=val;else delete b[cat];saveBudgets(b);}
 const CHART_COLORS=["#6366f1","#f59e0b","#ef4444","#10b981","#3b82f6","#8b5cf6","#ec4899","#14b8a6","#f97316","#84cc16","#06b6d4","#a855f7","#fb7185","#34d399","#60a5fa"];
 const MONTH_NAMES=["","Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 let currentYear,currentMonth,currentFilter="all",selectedType="Gasto",localTx=[],sbClient=null,monthlyChart=null,pieChartExpenses=null,pieChartIncome=null,editingId=null;
@@ -311,6 +317,21 @@ function renderExpenses(){
   const gSr=Object.entries(gMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
   document.getElementById("catBG").innerHTML=makeBreakdown(txs,"Gasto");
   pieChartExpenses=makePieChart(gSr,"pChG",pieChartExpenses);
+  const budgets=loadBudgets();
+  const bEntries=Object.entries(budgets).filter(([,v])=>v>0);
+  const bSec=document.getElementById("budgetSection");
+  if(!bEntries.length){bSec.style.display="none";return;}
+  bSec.style.display="";
+  let bh="";
+  bEntries.forEach(([cat,limit])=>{
+    const spent=gMap[cat]||0;
+    const pct=Math.min(Math.round(spent/limit*100),100);
+    const over=spent>limit;
+    const color=over?"var(--red)":pct>80?"#f59e0b":"var(--green)";
+    const remaining=limit-spent;
+    bh+=`<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:13px">${getEmoji(cat)} ${cat}</span><span style="font-size:12px;color:${color};font-weight:600">${formatEuro(spent)} / ${formatEuro(limit)}</span></div><div style="background:var(--bg3);border-radius:4px;height:6px;overflow:hidden"><div style="height:6px;border-radius:4px;background:${color};width:${pct}%;transition:width .3s"></div></div><div style="font-size:11px;color:${over?'var(--red)':'var(--text2)'};margin-top:3px;text-align:right">${over?'Excedido '+formatEuro(-remaining):'Quedan '+formatEuro(remaining)}</div></div>`;
+  });
+  document.getElementById("budgetList").innerHTML=bh;
 }
 function renderIncome(){
   const txs=getMonthTransactions(currentYear,currentMonth);
