@@ -95,9 +95,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sml{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
 .smv{font-size:17px;font-weight:700;margin-top:3px}
 .bnr{background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:var(--accent);text-align:center;display:none}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:12px;font-size:13px;font-weight:600;z-index:500;opacity:0;transition:opacity .3s;pointer-events:none;max-width:90%}
+.toast.show{opacity:1}
+.toast.ok{background:var(--green);color:#fff}
+.toast.err{background:var(--red);color:#fff}
 </style>
 </head>
 <body>
+<div class="toast" id="toast"></div>
 <div class="hdr">
 <div class="hdr-top"><span class="app-title">&#x1F4B0; Finanzas Chals</span><span style="font-size:11px;color:var(--text2)" id="txC"></span></div>
 <div class="mnav"><button class="mbtn" onclick="prevMonth()">&#8249;</button><span class="mname" id="mL">-</span><button class="mbtn" onclick="nextMonth()">&#8250;</button></div>
@@ -192,6 +197,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 </div>
 <script>
+let toastTimer;
+function showToast(msg,type){
+  const el=document.getElementById("toast");
+  el.textContent=msg;el.className="toast "+type;
+  clearTimeout(toastTimer);
+  requestAnimationFrame(()=>{el.classList.add("show");toastTimer=setTimeout(()=>el.classList.remove("show"),2500);});
+}
 const DEFAULT_EXPENSE_CATS=["Comidas","Ocio","Ropa","Compras","Tabaco","Gasolina","Ahorros","Fondos Indexados","Netflix","Dientes","Padres","Claude Pro","Barbería / Esteticien","Otro"];
 const DEFAULT_INCOME_CATS=["Nomina","DJ","Vinted","Ahorros","Otro"];
 const DEFAULT_EMOJIS={"Nomina":"💼","Ahorros":"🏦","Fondos Indexados":"📈","Vinted":"👕","DJ":"🎧","Padres":"👪","Maca":"❤️","Netflix":"📺","Crunchyroll":"🀄","Ocio":"🎉","Ropa":"👟","Gasolina":"⛽","Comidas":"🍔","Tabaco":"🚬","Compras":"🛒","Gym":"💪","Dientes":"🦷","Otro":"📌","Suscripciones":"🔔","TryHackMe":"💻","GhatGpt Plus":"🤖","Claude Pro":"🤖","Barbería / Esteticien":"✂️"};
@@ -460,8 +472,8 @@ async function saveTransaction(){
   const cat=document.getElementById("fC").value;
   const date=document.getElementById("fD").value;
   const desc=document.getElementById("fDesc").value.trim();
-  if(!amt||amt<=0){alert("Introduce una cantidad valida");return;}
-  if(!date){alert("Selecciona una fecha");return;}
+  if(!amt||amt<=0){showToast("Introduce una cantidad válida","err");return;}
+  if(!date){showToast("Selecciona una fecha","err");return;}
   let txTipo=selectedType,txCat=cat;
   if(selectedType==="Ahorro"){txTipo="Gasto";txCat="Ahorros";}
   else if(selectedType==="Inversion"){txTipo="Gasto";txCat="Fondos Indexados";}
@@ -469,7 +481,7 @@ async function saveTransaction(){
     const updated={tipo:txTipo,categoria:txCat,cantidad:amt,fecha:date,descripcion:desc};
     if(sbClient&&!String(editingId).startsWith("local_")){
       try{const{error}=await sbClient.from("transactions").update(updated).eq("id",editingId);if(error)throw error;}
-      catch(e){alert("Error Supabase: "+e.message);return;}
+      catch(e){showToast("Error Supabase: "+e.message,"err");return;}
     }
     const idx=localTx.findIndex(t=>String(t.sb_id)===String(editingId));
     if(idx>=0)Object.assign(localTx[idx],updated);
@@ -481,7 +493,7 @@ async function saveTransaction(){
     const unitAmt=Math.round((amt/qty)*100)/100;
     for(let i=0;i<qty;i++){
       const tx={tipo:txTipo,categoria:txCat,cantidad:unitAmt,fecha:date,descripcion:realDesc};
-      if(sbClient){try{const{data,error}=await sbClient.from("transactions").insert([tx]).select();if(error)throw error;tx.sb_id=data[0].id;}catch(e){alert("Error Supabase: "+e.message);return;}}
+      if(sbClient){try{const{data,error}=await sbClient.from("transactions").insert([tx]).select();if(error)throw error;tx.sb_id=data[0].id;}catch(e){showToast("Error Supabase: "+e.message,"err");return;}}
       else{tx.sb_id="local_"+(Date.now()+i);}
       localTx.push(tx);
     }
@@ -509,14 +521,14 @@ function setupRealtime(){
 function connectSupabase(){
   const u=document.getElementById("sbU").value.trim();
   const k=document.getElementById("sbK").value.trim();
-  if(!u||!k){alert("Rellena la URL y la clave");return;}
-  try{sbClient=supabase.createClient(u,k);localStorage.setItem("sb_url",u);localStorage.setItem("sb_key",k);setPill(true);fetchSupabase();setupRealtime();alert("Conectado. Cargando datos...");}
-  catch(e){alert("Error: "+e.message);}
+  if(!u||!k){showToast("Rellena la URL y la clave","err");return;}
+  try{sbClient=supabase.createClient(u,k);localStorage.setItem("sb_url",u);localStorage.setItem("sb_key",k);setPill(true);fetchSupabase();setupRealtime();showToast("Conectado","ok");}
+  catch(e){showToast("Error: "+e.message,"err");}
 }
 function disconnectSupabase(){sbClient=null;localStorage.removeItem("sb_url");localStorage.removeItem("sb_key");localTx=[];saveLocal();setPill(false);render();}
 function setPill(ok){const el=document.getElementById("pill");el.textContent=ok?"🟢 Conectado":"⚪ Sin sincronizar";el.className="sp "+(ok?"pok":"poff");}
 function exportData(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify({v:1,t:localTx},null,2)],{type:"application/json"}));a.download="finanzas_backup.json";a.click();}
-function importData(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{try{const d=JSON.parse(e.target.result);const imp=d.t||d.transactions||d;if(!Array.isArray(imp))throw new Error("Formato invalido");let n=0;imp.forEach(t=>{if(!localTx.find(lt=>lt.sb_id===t.sb_id)){localTx.push(t);n++;}});saveLocal();render();alert(n+" transacciones importadas");}catch(err){alert("Error: "+err.message);}};r.readAsText(f);}
+function importData(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{try{const d=JSON.parse(e.target.result);const imp=d.t||d.transactions||d;if(!Array.isArray(imp))throw new Error("Formato invalido");let n=0;imp.forEach(t=>{if(!localTx.find(lt=>lt.sb_id===t.sb_id)){localTx.push(t);n++;}});saveLocal();render();showToast(n+" transacciones importadas","ok");}catch(err){showToast("Error: "+err.message,"err");}};r.readAsText(f);}
 function clearLocal(){if(!confirm("Borrar datos locales?"))return;localTx=[];saveLocal();render();}
 let swipeEl=null,startX=0,startY=0,swiping=false;
 function initSwipe(){
