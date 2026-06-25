@@ -131,6 +131,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 <div id="t-gst" class="tp">
 <div class="cc" id="budgetSection" style="display:none"><div class="ct">&#x1F4AF; Presupuestos</div><div id="budgetList"></div></div>
+<div class="cc" id="compareSection" style="display:none"><div class="ct">&#x1F4CA; vs. mes anterior</div><div id="compareList"></div></div>
 <div class="cc"><div class="ct">&#x1F4B8; Gastos por categor&#xED;a</div><div id="catBG"></div></div>
 <div class="cc"><div class="ct">&#x1F967; Distribuci&#xF3;n gastos</div><canvas id="pChG" height="220"></canvas></div>
 </div>
@@ -320,18 +321,44 @@ function renderExpenses(){
   const budgets=loadBudgets();
   const bEntries=Object.entries(budgets).filter(([,v])=>v>0);
   const bSec=document.getElementById("budgetSection");
-  if(!bEntries.length){bSec.style.display="none";return;}
-  bSec.style.display="";
-  let bh="";
-  bEntries.forEach(([cat,limit])=>{
-    const spent=gMap[cat]||0;
-    const pct=Math.min(Math.round(spent/limit*100),100);
-    const over=spent>limit;
-    const color=over?"var(--red)":pct>80?"#f59e0b":"var(--green)";
-    const remaining=limit-spent;
-    bh+=`<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:13px">${getEmoji(cat)} ${cat}</span><span style="font-size:12px;color:${color};font-weight:600">${formatEuro(spent)} / ${formatEuro(limit)}</span></div><div style="background:var(--bg3);border-radius:4px;height:6px;overflow:hidden"><div style="height:6px;border-radius:4px;background:${color};width:${pct}%;transition:width .3s"></div></div><div style="font-size:11px;color:${over?'var(--red)':'var(--text2)'};margin-top:3px;text-align:right">${over?'Excedido '+formatEuro(-remaining):'Quedan '+formatEuro(remaining)}</div></div>`;
+  if(!bEntries.length){bSec.style.display="none";}
+  else{
+    bSec.style.display="";
+    let bh="";
+    bEntries.forEach(([cat,limit])=>{
+      const spent=gMap[cat]||0;
+      const pct=Math.min(Math.round(spent/limit*100),100);
+      const over=spent>limit;
+      const color=over?"var(--red)":pct>80?"#f59e0b":"var(--green)";
+      const remaining=limit-spent;
+      bh+=`<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:13px">${getEmoji(cat)} ${cat}</span><span style="font-size:12px;color:${color};font-weight:600">${formatEuro(spent)} / ${formatEuro(limit)}</span></div><div style="background:var(--bg3);border-radius:4px;height:6px;overflow:hidden"><div style="height:6px;border-radius:4px;background:${color};width:${pct}%;transition:width .3s"></div></div><div style="font-size:11px;color:${over?'var(--red)':'var(--text2)'};margin-top:3px;text-align:right">${over?'Excedido '+formatEuro(-remaining):'Quedan '+formatEuro(remaining)}</div></div>`;
+    });
+    document.getElementById("budgetList").innerHTML=bh;
+  }
+  let pm=currentMonth-1,py=currentYear;if(pm<1){pm=12;py--;}
+  const prevTxs=getMonthTransactions(py,pm);
+  const prevMap={};prevTxs.filter(t=>t.tipo==="Gasto"&&t.categoria!=="Ahorros"&&t.categoria!=="Fondos Indexados").forEach(t=>{prevMap[t.categoria]=(prevMap[t.categoria]||0)+t.cantidad;});
+  const allCats=new Set([...Object.keys(gMap),...Object.keys(prevMap)]);
+  const diffs=[];
+  allCats.forEach(cat=>{
+    const cur=gMap[cat]||0,prev=prevMap[cat]||0;
+    if(prev===0&&cur===0)return;
+    if(prev===0){diffs.push({cat,cur,prev,pct:100,type:"new"});return;}
+    const pct=Math.round(((cur-prev)/prev)*100);
+    if(pct!==0)diffs.push({cat,cur,prev,pct,type:pct>0?"up":"down"});
   });
-  document.getElementById("budgetList").innerHTML=bh;
+  diffs.sort((a,b)=>Math.abs(b.pct)-Math.abs(a.pct));
+  const cSec=document.getElementById("compareSection");
+  if(!diffs.length||!prevTxs.length){cSec.style.display="none";return;}
+  cSec.style.display="";
+  let ch="";
+  diffs.slice(0,6).forEach(d=>{
+    const arrow=d.type==="up"?"▲":d.type==="down"?"▼":"●";
+    const color=d.type==="down"?"var(--green)":"var(--red)";
+    const label=d.type==="new"?"Nuevo":(d.pct>0?"+":"")+d.pct+"%";
+    ch+=`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)"><span style="font-size:14px">${getEmoji(d.cat)}</span><span style="flex:1;font-size:13px">${d.cat}</span><span style="font-size:11px;color:var(--text2)">${formatEuro(d.prev)} → ${formatEuro(d.cur)}</span><span style="font-size:12px;font-weight:700;color:${color};min-width:55px;text-align:right">${arrow} ${label}</span></div>`;
+  });
+  document.getElementById("compareList").innerHTML=ch;
 }
 function renderIncome(){
   const txs=getMonthTransactions(currentYear,currentMonth);
