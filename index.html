@@ -1,4 +1,4 @@
-<!DOCTYPE html><!DOCTYPE html>
+﻿<!DOCTYPE html><!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -204,9 +204,9 @@ function showToast(msg,type){
   clearTimeout(toastTimer);
   requestAnimationFrame(()=>{el.classList.add("show");toastTimer=setTimeout(()=>el.classList.remove("show"),2500);});
 }
-const DEFAULT_EXPENSE_CATS=["Comidas","Ocio","Ropa","Compras","Tabaco","Gasolina","Ahorros","Fondos Indexados","Netflix","Dientes","Padres","Claude Pro","Barbería / Esteticien","Otro"];
+const DEFAULT_EXPENSE_CATS=["Comidas","Ocio","Ropa","Compras","Tabaco","Coche","Ahorros","Fondos Indexados","Netflix","Dientes","Padres","Claude Pro","Barbería / Esteticien","Otro"];
 const DEFAULT_INCOME_CATS=["Nomina","DJ","Vinted","Ahorros","Otro"];
-const DEFAULT_EMOJIS={"Nomina":"💼","Ahorros":"🏦","Fondos Indexados":"📈","Vinted":"👕","DJ":"🎧","Padres":"👪","Maca":"❤️","Netflix":"📺","Crunchyroll":"🀄","Ocio":"🎉","Ropa":"👟","Gasolina":"⛽","Comidas":"🍔","Tabaco":"🚬","Compras":"🛒","Gym":"💪","Dientes":"🦷","Otro":"📌","Suscripciones":"🔔","TryHackMe":"💻","GhatGpt Plus":"🤖","Claude Pro":"🤖","Barbería / Esteticien":"✂️"};
+const DEFAULT_EMOJIS={"Nomina":"💼","Ahorros":"🏦","Fondos Indexados":"📈","Vinted":"👕","DJ":"🎧","Padres":"👪","Maca":"❤️","Netflix":"📺","Crunchyroll":"🀄","Ocio":"🎉","Ropa":"👟","Coche":"🚗","Comidas":"🍔","Tabaco":"🚬","Compras":"🛒","Gym":"💪","Dientes":"🦷","Otro":"📌","Suscripciones":"🔔","TryHackMe":"💻","GhatGpt Plus":"🤖","Claude Pro":"🤖","Barbería / Esteticien":"✂️"};
 function loadCategories(){
   const saved=localStorage.getItem("fc_cats");
   if(saved){const d=JSON.parse(saved);return d;}
