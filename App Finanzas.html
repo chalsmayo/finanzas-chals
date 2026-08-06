@@ -244,18 +244,21 @@ function mkDesglose(txs,tipo){
   ptxs.filter(t=>t.tipo===tipo&&t.categoria!=="Ahorros"&&t.categoria!=="Fondos Indexados").forEach(t=>{pb[t.categoria]=(pb[t.categoria]||0)+t.cantidad;});
   if(tipo==="Ingreso"){ptxs.filter(t=>t.categoria==="Ahorros").forEach(t=>{pb["Ahorros"]=(pb["Ahorros"]||0)+t.cantidad;});}
   const st=Object.entries(ab).sort((a,b)=>b[1]-a[1]),mx=st.length?st[0][1]:1;
+  const mainColor=tipo==="Ingreso"?"var(--green)":"var(--red)";
   const empty=tipo==="Gasto"?"Sin gastos este mes":"Sin ingresos este mes";
   if(!st.length)return `<div style="color:var(--text2);text-align:center;padding:20px;font-size:13px">${empty}</div>`;
   return st.map((e,i)=>{
     const prev=pb[e[0]]||0;
     const delta=Math.round((e[1]-prev)*100)/100;
-    let dEl="";
+    let cmpEl="";
     if(prev>0){
+      const pct=Math.round(Math.abs(delta)/prev*100);
       const up=delta>0;
       const col=tipo==="Gasto"?(up?"var(--red)":"var(--green)"):(up?"var(--green)":"var(--red)");
-      dEl=` <span style="font-size:10px;color:${col}">${up?"▲":"▼"} ${eur(Math.abs(delta))}</span>`;
+      const sign=up?"▲ +":"▼ -";
+      cmpEl=`<div style="font-size:10px;color:${col};margin-top:2px">${sign}${eur(Math.abs(delta))} (${pct}%)</div>`;
     }
-    return `<div class="ci" onclick="showCat('${e[0]}','${tipo}')" style="cursor:pointer"><div class="cd" style="background:${CL[i%CL.length]}"></div><div class="cn">${emo(e[0])} ${e[0]}${dEl}</div><div class="cbw"><div class="cb" style="width:${Math.round(e[1]/mx*100)}%;background:${CL[i%CL.length]}"></div></div><div class="ca" style="color:${tipo==="Ingreso"?"var(--green)":"var(--red)"}">${eur(e[1])}</div><div style="font-size:14px;color:var(--text2);margin-left:4px">›</div></div>`;
+    return `<div class="ci" onclick="showCat('${e[0]}','${tipo}')" style="cursor:pointer"><div class="cd" style="background:${CL[i%CL.length]}"></div><div class="cn">${emo(e[0])} ${e[0]}</div><div class="cbw"><div class="cb" style="width:${Math.round(e[1]/mx*100)}%;background:${CL[i%CL.length]}"></div></div><div class="ca" style="color:${mainColor}"><div>${eur(e[1])}</div>${cmpEl}</div><div style="font-size:14px;color:var(--text2);margin-left:4px">›</div></div>`;
   }).join("");
 }
 
