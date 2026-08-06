@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s \"https://oykurfzuhvueynngkcim.supabase.co/rest/v1/transactions?select=id,tipo,categoria,cantidad,fecha,descripcion&order=id.asc&limit=5\" -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95a3VyZnp1aHZ1ZXlubmdrY2ltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2ODE4NjIsImV4cCI6MjA5NzI1Nzg2Mn0.OxJuge90Y4y3sjNqFZQCvVfrSWGH1Yz9Es-liem-bzc\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95a3VyZnp1aHZ1ZXlubmdrY2ltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2ODE4NjIsImV4cCI6MjA5NzI1Nzg2Mn0.OxJuge90Y4y3sjNqFZQCvVfrSWGH1Yz9Es-liem-bzc\")",
+      "Bash(python3 -m json.tool)",
+      "Bash(node -e \"console.log\\(JSON.stringify\\(JSON.parse\\(require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\)\\),null,2\\)\\)\")"
+    ]
+  }
+}

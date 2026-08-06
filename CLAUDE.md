@@ -8,8 +8,10 @@ Archivo principal: App Finanzas Chals.html
 - Ahorros aparece en el desglose de ingresos
 
 ## Flujo de trabajo
-- NUNCA sobreescribir el archivo principal. Crear un archivo nuevo versionado (ej: `App Finanzas Chals v2.html`) con los cambios
+- El archivo desplegado es `index.html`. Todos los cambios se hacen ahí directamente
+- Git gestiona el versionado: cada cambio = un commit con mensaje descriptivo
 - Tras cada cambio, hacer commit y push a GitHub automáticamente
+- Si un cambio no gusta, revertir con `git revert` al commit anterior
 
 ## Notas
 - Los datos viven en Supabase, no en localStorage
