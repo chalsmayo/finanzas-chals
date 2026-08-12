@@ -51,6 +51,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .txamt{font-size:14px;font-weight:700}
 .txamt.inc{color:var(--green)}.txamt.exp{color:var(--red)}
 .txdel{background:none;border:none;color:var(--text2);font-size:14px;cursor:pointer;padding:4px;border-radius:6px;flex-shrink:0}
+.txedt{background:none;border:none;color:var(--text2);font-size:14px;cursor:pointer;padding:4px;border-radius:6px;flex-shrink:0}
 .empty{text-align:center;padding:50px 20px;color:var(--text2)}
 .empty .ei{font-size:44px;margin-bottom:10px}
 .fab{position:fixed;bottom:24px;right:50%;transform:translateX(calc(50% - 195px));width:56px;height:56px;border-radius:16px;background:var(--accent);border:none;color:#fff;font-size:26px;cursor:pointer;box-shadow:0 6px 24px rgba(99,102,241,.45);z-index:200;display:flex;align-items:center;justify-content:center}
@@ -179,10 +180,10 @@ const CI=["Nomina","DJ","Vinted","Ahorros","Otro"];
 const EM={"Nomina":"💼","Ahorros":"🏦","Fondos Indexados":"📈","Vinted":"👕","DJ":"🎧","Padres":"👪","Maca":"❤️","Netflix":"📺","Crunchyroll":"🀄","Ocio":"🎉","Ropa":"👟","Gasolina":"⛽","Comidas":"🍔","Supermercado":"🍔","Tabaco":"🚬","Compras":"🛒","Gym":"💪","Dientes":"🦷","Otro":"📌","Suscripciones":"🔔","TryHackMe":"💻","GhatGpt Plus":"🤖","Claude Pro":"🤖","Barbería / Esteticien":"✂️"};
 const CL=["#6366f1","#f59e0b","#ef4444","#10b981","#3b82f6","#8b5cf6","#ec4899","#14b8a6","#f97316","#84cc16","#06b6d4","#a855f7","#fb7185","#34d399","#60a5fa"];
 const MN=["","Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-let cy,cm,flt="all",sTyp="Gasto",loc=[],sb=null,mCh=null,pChG=null,pChI=null;
+let cy,cm,flt="all",sTyp="Gasto",loc=[],sb=null,mCh=null,pChG=null,pChI=null,editingTxId=null;
 function ldL(){try{const r=localStorage.getItem("fc_v2");if(r)loc=JSON.parse(r);}catch(e){loc=[];}}
 function svL(){localStorage.setItem("fc_v2",JSON.stringify(loc));}
-function allTx(){return[...HIST,...loc].sort((a,b)=>b.fecha.localeCompare(a.fecha));}
+function allTx(){if(sb)return[...loc].sort((a,b)=>b.fecha.localeCompare(a.fecha));return[...HIST,...loc].sort((a,b)=>b.fecha.localeCompare(a.fecha));}
 function mTx(y,m){const p=`${y}-${String(m).padStart(2,"0")}`;return allTx().filter(t=>t.fecha.startsWith(p));}
 function eur(v){return v.toLocaleString("es-ES",{style:"currency",currency:"EUR"});}
 function fd(s){return new Date(s+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"});}
@@ -228,8 +229,8 @@ function rTx(){
     byD[d].forEach(t=>{
       const cls=t.tipo==="Ingreso"?"inc":"exp";
       const sign=t.tipo==="Ingreso"?"+":"-";
-      const del=t.sb_id?`<button class="txdel" onclick="dlTx('${t.sb_id}',event)">&#x2715;</button>`:"";
-      h+=`<div class="txi"><div class="txic ${cls}">${emo(t.categoria)}</div><div class="txinfo"><div class="txcat">${t.categoria}</div><div class="txdesc">${t.descripcion||t.categoria}</div></div><div class="txr"><div class="txamt ${cls}">${sign}${eur(t.cantidad)}</div></div>${del}</div>`;
+      const del=t.sb_id?`<button class="txdel" onclick="dlTx('${t.sb_id}',event)">&#x2715;</button>`:"";const edt=t.sb_id?`<button class="txedt" onclick="editTx('${t.sb_id}',event)">&#x270E;</button>`:"";      
+      h+=`<div class="txi"><div class="txic ${cls}">${emo(t.categoria)}</div><div class="txinfo"><div class="txcat">${t.categoria}</div><div class="txdesc">${t.descripcion||t.categoria}</div></div><div class="txr"><div class="txamt ${cls}">${sign}${eur(t.cantidad)}</div></div>${edt}${del}</div>`;
     });
   });
   list.innerHTML=h;
@@ -325,7 +326,7 @@ function rEvol(){
   ]},options:{responsive:true,plugins:{legend:{labels:{color:"#94a3b8",font:{size:11}}}},scales:{x:{ticks:{color:"#94a3b8",font:{size:10}},grid:{color:"rgba(255,255,255,.04)"}},y:{ticks:{color:"#94a3b8",font:{size:10},callback:v=>"€"+Math.round(v)},grid:{color:"rgba(255,255,255,.04)"}}}}});
 }
 function opM(){document.getElementById("fD").value=new Date().toISOString().split("T")[0];document.getElementById("fA").value="";document.getElementById("fDesc").value="";selT("Gasto");document.getElementById("ovl").classList.add("show");setTimeout(()=>document.getElementById("fA").focus(),350);}
-function clsM(){document.getElementById("ovl").classList.remove("show");}
+function clsM(){document.getElementById("ovl").classList.remove("show");editingTxId=null;document.querySelector(".mtit").firstChild.textContent="Nueva transaccion";}
 function clsOvl(e){if(e.target.id==="ovl")clsM();}
 function selT(t){
   sTyp=t;
@@ -351,6 +352,20 @@ async function svTx(){
   let txTipo=sTyp,txCat=cat;
   if(sTyp==="Ahorro"){txTipo="Gasto";txCat="Ahorros";}
   else if(sTyp==="Inversion"){txTipo="Gasto";txCat="Fondos Indexados";}
+  if(editingTxId!==null){
+    const idx=loc.findIndex(t=>t.sb_id==editingTxId);
+    if(idx>=0){
+      const updated={...loc[idx],tipo:txTipo,categoria:txCat,cantidad:Math.round(amt*100)/100,fecha:date,descripcion:desc};
+      if(sb&&!editingTxId.toString().startsWith("local_")){
+        try{const{error}=await sb.from("transactions").update({tipo:txTipo,categoria:txCat,cantidad:Math.round(amt*100)/100,fecha:date,descripcion:desc}).eq("id",editingTxId);if(error)throw error;}
+        catch(e){alert("Error Supabase: "+e.message);return;}
+      }
+      loc[idx]=updated;
+    }
+    editingTxId=null;svL();clsM();
+    const d=new Date(date+"T12:00:00");cy=d.getFullYear();cm=d.getMonth()+1;render();
+    return;
+  }
   let qty=1,realDesc=desc;
   const qMatch=desc.match(/^(\d+)\s+(.+)$/);
   if(qMatch&&parseInt(qMatch[1])>1){qty=parseInt(qMatch[1]);realDesc=qMatch[2];}
@@ -369,6 +384,22 @@ async function dlTx(sid,e){
   if(!confirm("Eliminar esta transaccion?"))return;
   if(sb&&!sid.toString().startsWith("local_")){try{await sb.from("transactions").delete().eq("id",sid);}catch(err){console.error(err);}}
   loc=loc.filter(t=>t.sb_id!=sid);svL();render();
+}
+function editTx(sid,event){
+  event.stopPropagation();
+  const tx=loc.find(t=>t.sb_id==sid);
+  if(!tx)return;
+  editingTxId=sid;
+  let tipo=tx.tipo;
+  if(tx.categoria==="Ahorros")tipo="Ahorro";
+  else if(tx.categoria==="Fondos Indexados")tipo="Inversion";
+  selT(tipo);
+  document.getElementById("fA").value=tx.cantidad;
+  document.getElementById("fD").value=tx.fecha;
+  document.getElementById("fDesc").value=tx.descripcion||"";
+  setTimeout(()=>{document.getElementById("fC").value=tx.categoria;},50);
+  document.querySelector(".mtit").firstChild.textContent="Editar transaccion";
+  document.getElementById("ovl").classList.add("show");
 }
 async function fetchSB(){
   if(!sb)return;
