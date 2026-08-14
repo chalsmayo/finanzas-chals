@@ -51,7 +51,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .txamt{font-size:14px;font-weight:700}
 .txamt.inc{color:var(--green)}.txamt.exp{color:var(--red)}
 .txdel{background:none;border:none;color:var(--text2);font-size:14px;cursor:pointer;padding:4px;border-radius:6px;flex-shrink:0}
-.txedt{background:none;border:none;color:var(--text2);font-size:14px;cursor:pointer;padding:4px;border-radius:6px;flex-shrink:0}
+.txedt{background:none;border:none;color:#888;font-size:14px;cursor:pointer;padding:4px;border-radius:6px;flex-shrink:0}
 .empty{text-align:center;padding:50px 20px;color:var(--text2)}
 .empty .ei{font-size:44px;margin-bottom:10px}
 .fab{position:fixed;bottom:24px;right:50%;transform:translateX(calc(50% - 195px));width:56px;height:56px;border-radius:16px;background:var(--accent);border:none;color:#fff;font-size:26px;cursor:pointer;box-shadow:0 6px 24px rgba(99,102,241,.45);z-index:200;display:flex;align-items:center;justify-content:center}
@@ -74,6 +74,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .tb.active.i{border-color:var(--green);background:rgba(16,185,129,.1);color:var(--green)}
 .tb.active.ah{border-color:var(--green);background:rgba(16,185,129,.1);color:var(--green)}
 .tb.active.iv{border-color:var(--accent);background:rgba(99,102,241,.1);color:var(--accent)}
+.tb.active.rt{border-color:#f59e0b;background:rgba(245,158,11,.1);color:#f59e0b}
 .bp{width:100%;padding:14px;border-radius:12px;background:var(--accent);border:none;color:#fff;font-size:16px;font-weight:600;cursor:pointer;margin-top:6px}
 .bs{background:var(--bg3);color:var(--text)}
 .cc{background:var(--bg2);border-radius:16px;padding:16px;margin-bottom:14px;border:1px solid var(--border)}
@@ -137,10 +138,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="cc"><div class="ct">&#x1F967; Distribuci&#xF3;n ingresos</div><canvas id="pChI" height="220"></canvas></div>
 </div>
 <div id="t-ev" class="tp">
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
 <div class="smc"><div class="sml">Media gastos reales</div><div class="smv" id="avgE" style="color:var(--red)">-</div></div>
 <div class="smc"><div class="sml">Media ingresos reales</div><div class="smv" id="avgI" style="color:var(--green)">-</div></div>
 <div class="smc"><div class="sml">Fondos indexados</div><div class="smv" id="totF" style="color:var(--accent)">-</div></div>
+<div class="smc"><div class="sml">Saldo ahorros neto</div><div class="smv" id="totA" style="color:#f59e0b">-</div></div>
 </div>
 <div class="cc"><div class="ct">&#x1F4C8; Evoluci&#xF3;n mensual</div><canvas id="mCh" height="260"></canvas></div>
 </div>
@@ -165,7 +167,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="modal">
 <div class="mhdl"></div>
 <div class="mtit">Nueva transacci&#xF3;n<button class="mcls" onclick="clsM()">&#x2715;</button></div>
-<div class="fg"><label class="fl">Tipo</label><div class="tt"><button class="tb active g" id="bG" onclick="selT('Gasto')">&#x1F4B8; Gasto</button><button class="tb i" id="bI" onclick="selT('Ingreso')">&#x1F4B0; Ingreso</button><button class="tb ah" id="bA" onclick="selT('Ahorro')">&#x1F3E6; Ahorro</button><button class="tb iv" id="bV" onclick="selT('Inversion')">&#x1F4C8; Inversi&#xF3;n</button></div></div>
+<div class="fg"><label class="fl">Tipo</label><div class="tt"><button class="tb active g" id="bG" onclick="selT('Gasto')">&#x1F4B8; Gasto</button><button class="tb i" id="bI" onclick="selT('Ingreso')">&#x1F4B0; Ingreso</button><button class="tb ah" id="bA" onclick="selT('Ahorro')">&#x1F3E6; Ahorro</button><button class="tb iv" id="bV" onclick="selT('Inversion')">&#x1F4C8; Inversi&#xF3;n</button><button class="tb rt" id="bR" onclick="selT('Retiro')">&#x1F4E4; Retiro TR</button></div></div>
 <div class="fg"><label class="fl">Cantidad (&#x20AC;)</label><input class="fi" id="fA" type="number" step="0.01" min="0.01" placeholder="0,00" inputmode="decimal"/></div>
 <div class="fg" id="fgCat"><label class="fl">Categor&#xED;a</label><select class="fs" id="fC"></select></div>
 <div class="fg"><label class="fl">Fecha</label><input class="fi" id="fD" type="date"/></div>
@@ -229,7 +231,8 @@ function rTx(){
     byD[d].forEach(t=>{
       const cls=t.tipo==="Ingreso"?"inc":"exp";
       const sign=t.tipo==="Ingreso"?"+":"-";
-      const del=t.sb_id?`<button class="txdel" onclick="dlTx('${t.sb_id}',event)">&#x2715;</button>`:"";const edt=t.sb_id?`<button class="txedt" onclick="editTx('${t.sb_id}',event)">&#x270E;</button>`:"";      
+      const del=t.sb_id?`<button class="txdel" onclick="dlTx('${t.sb_id}',event)">&#x2715;</button>`:"";const edt=t.sb_id?`<button class="txedt" onclick="editTx('${t.sb_id}',event)">&#x270E;</button>`:"";
+
       h+=`<div class="txi"><div class="txic ${cls}">${emo(t.categoria)}</div><div class="txinfo"><div class="txcat">${t.categoria}</div><div class="txdesc">${t.descripcion||t.categoria}</div></div><div class="txr"><div class="txamt ${cls}">${sign}${eur(t.cantidad)}</div></div>${edt}${del}</div>`;
     });
   });
@@ -316,6 +319,8 @@ function rEvol(){
   const all=allTx();
   const saldoFI=all.filter(t=>t.categoria==="Fondos Indexados"&&t.tipo==="Gasto").reduce((s,t)=>s+t.cantidad,0)-all.filter(t=>t.categoria==="Fondos Indexados"&&t.tipo==="Ingreso").reduce((s,t)=>s+t.cantidad,0);
   document.getElementById("totF").textContent=eur(saldoFI);
+  const saldoAh=all.filter(t=>t.tipo==="Gasto"&&t.categoria==="Ahorros").reduce((s,t)=>s+t.cantidad,0)-all.filter(t=>t.tipo==="Ingreso"&&t.categoria==="Ahorros").reduce((s,t)=>s+t.cantidad,0);
+  document.getElementById("totA").textContent=eur(saldoAh);
   const labels=am.map(ym=>{const[y,m]=ym.split("-").map(Number);return MN[m].slice(0,3)+" "+String(y).slice(2);});
   if(mCh)mCh.destroy();
   mCh=new Chart(document.getElementById("mCh").getContext("2d"),{type:"bar",data:{labels,datasets:[
@@ -330,11 +335,11 @@ function clsM(){document.getElementById("ovl").classList.remove("show");editingT
 function clsOvl(e){if(e.target.id==="ovl")clsM();}
 function selT(t){
   sTyp=t;
-  ["bG","bI","bA","bV"].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove("active");});
-  const btnMap={"Gasto":"bG","Ingreso":"bI","Ahorro":"bA","Inversion":"bV"};
+  ["bG","bI","bA","bV","bR"].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove("active");});
+  const btnMap={"Gasto":"bG","Ingreso":"bI","Ahorro":"bA","Inversion":"bV","Retiro":"bR"};
   const btn=document.getElementById(btnMap[t]);if(btn)btn.classList.add("active");
   const fgCat=document.getElementById("fgCat");
-  if(t==="Ahorro"||t==="Inversion"){
+  if(t==="Ahorro"||t==="Inversion"||t==="Retiro"){
     fgCat.style.display="none";
   }else{
     fgCat.style.display="";
@@ -352,6 +357,7 @@ async function svTx(){
   let txTipo=sTyp,txCat=cat;
   if(sTyp==="Ahorro"){txTipo="Gasto";txCat="Ahorros";}
   else if(sTyp==="Inversion"){txTipo="Gasto";txCat="Fondos Indexados";}
+  else if(sTyp==="Retiro"){txTipo="Ingreso";txCat="Ahorros";}
   if(editingTxId!==null){
     const idx=loc.findIndex(t=>t.sb_id==editingTxId);
     if(idx>=0){
@@ -391,7 +397,8 @@ function editTx(sid,event){
   if(!tx)return;
   editingTxId=sid;
   let tipo=tx.tipo;
-  if(tx.categoria==="Ahorros")tipo="Ahorro";
+  if(tx.categoria==="Ahorros"&&tx.tipo==="Gasto")tipo="Ahorro";
+  else if(tx.categoria==="Ahorros"&&tx.tipo==="Ingreso")tipo="Retiro";
   else if(tx.categoria==="Fondos Indexados")tipo="Inversion";
   selT(tipo);
   document.getElementById("fA").value=tx.cantidad;
