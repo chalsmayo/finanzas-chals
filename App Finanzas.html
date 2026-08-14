@@ -241,7 +241,7 @@ function rTx(){
 function mkDesglose(txs,tipo){
   const ab={};
   txs.filter(t=>t.tipo===tipo&&t.categoria!=="Ahorros"&&t.categoria!=="Fondos Indexados").forEach(t=>{ab[t.categoria]=(ab[t.categoria]||0)+t.cantidad;});
-  if(tipo==="Ingreso"){txs.filter(t=>t.categoria==="Ahorros").forEach(t=>{ab["Ahorros"]=(ab["Ahorros"]||0)+t.cantidad;});}
+  if(tipo==="Ingreso"){txs.filter(t=>t.categoria==="Ahorros"&&t.tipo==="Ingreso").forEach(t=>{ab["Ahorros"]=(ab["Ahorros"]||0)+t.cantidad;});}
   const pCm=cm===1?12:cm-1,pCy=cm===1?cy-1:cy;
   const ptxs=mTx(pCy,pCm);
   const pb={};
