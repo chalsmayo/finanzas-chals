@@ -494,8 +494,20 @@ function editTx(sid,event){
 async function fetchSB(){
   if(!sb)return;
   document.getElementById("bnr").style.display="block";
-  try{const{data,error}=await sb.from("transactions").select("*").order("fecha",{ascending:false});if(error)throw error;loc=data.map(r=>({sb_id:r.id,tipo:r.tipo,categoria:r.categoria,cantidad:parseFloat(r.cantidad),fecha:r.fecha,descripcion:r.descripcion||""}));svL();render();}
-  catch(e){console.error("Supabase fetch error:",e);}
+  try{
+    let all=[],from=0;const PAGE=1000;
+    while(true){
+      const{data,error}=await sb.from("transactions").select("*").order("fecha",{ascending:false}).range(from,from+PAGE-1);
+      if(error)throw error;
+      all=all.concat(data);
+      if(!data||data.length<PAGE)break;
+      from+=PAGE;
+      if(from>200000)break;
+    }
+    loc=all.map(r=>({sb_id:r.id,tipo:r.tipo,categoria:r.categoria,cantidad:parseFloat(r.cantidad),fecha:r.fecha,descripcion:r.descripcion||""}));
+    svL();render();
+  }
+  catch(e){console.error("Supabase fetch error:",e);alert("Error cargando datos de Supabase: "+e.message);}
   document.getElementById("bnr").style.display="none";
 }
 function setupRT(){
