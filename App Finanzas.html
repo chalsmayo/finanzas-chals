@@ -340,19 +340,23 @@ function rReparto(){
   const ing=realMes(txs).inc;
   const fij=txs.filter(t=>t.tipo==="Gasto"&&CFIJ.indexOf(t.categoria)>=0).reduce((s,t)=>s+t.cantidad,0);
   const ret=txs.filter(t=>t.tipo==="Ingreso"&&t.categoria==="Ahorros").reduce((s,t)=>s+t.cantidad,0);
-  const base=Math.max(0,ing-fij);
   const _ag=catAgg(txs);
-  const g=(x)=>_ag[x]?(esNeto(x)?_ag[x].net:_ag[x].g):0;
-  const al=ret>0?`<div style="color:#f59e0b;font-weight:600;margin-top:3px">\u26A0 Has sacado ${eur(ret)} de ahorros este mes (no cuenta como ingreso)</div>`:"";
+  const g=(x)=>_ag[x]?_ag[x].net:0;
+  const aho=Math.max(0,g("Ahorros"));
+  const base=Math.max(0,ing-aho-fij);
+  const al=(ret>0&&aho===0)?`<div style="color:#f59e0b;font-weight:600;margin-top:3px">\u26A0 Has sacado ${eur(ret)} de ahorros este mes (no ampl\u00eda tu presupuesto)</div>`:"";
+  let frm=`ingresos ${eur(ing)}`;
+  if(aho>0)frm+=` \u2212 ahorro ${eur(aho)}`;
+  frm+=` \u2212 fijos ${eur(fij)}`;
   document.getElementById("repBase").innerHTML=(base>0
-    ?`Base: ${eur(base)}   (ingresos reales ${eur(ing)} \u2212 fijos ${eur(fij)})`
-    :"Sin ingresos reales registrados este mes")+al;
+    ?`Base: ${eur(base)}   (${frm})`
+    :"Sin base de reparto este mes")+al;
   const cats=Object.keys(repCfg).filter(x=>repCfg[x]>0).sort((a,b)=>repCfg[b]-repCfg[a]);
   if(!cats.length){document.getElementById("repL").innerHTML='<div style="color:var(--text2);font-size:12px;text-align:center;padding:8px">Define los porcentajes en Ajustes</div>';return;}
   document.getElementById("repL").innerHTML=cats.map(x=>{
-    const pct=repCfg[x],real=g(x),obj=Math.round(base*pct)/100,dif=Math.round((real-obj)*100)/100;
+    const pct=repCfg[x],real=g(x),obj=Math.round((x==="Ahorros"?ing:base)*pct)/100,dif=Math.round((real-obj)*100)/100;
     let pc=obj>0?Math.min(100,Math.max(0,Math.round(real/obj*100))):(real>0?100:0);
-    const more=(x==="Ahorros"),net=esNeto(x);
+    const more=(x==="Ahorros"),net=esNeto(x)&&!more;
     let col,msg;
     if(net&&real<0){col="var(--green)";msg=`\u2713 Vas ganando ${eur(-real)} este mes`;pc=0;}
     else if(net&&real===0&&obj>0&&_ag[x]&&_ag[x].g>0&&_ag[x].i>0){col="var(--text2)";msg="En tablas";}
