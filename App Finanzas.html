@@ -249,7 +249,7 @@ const CL=["#6b8afd","#8aa2ff","#a7b8ff","#5d6b8f","#7d8aa8","#9aa4bc","#4ade80",
 const MN=["","Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 let cy,cm,flt="all",sTyp="Gasto",loc=[],sb=null,mCh=null,pChG=null,pChI=null,editingTxId=null;
 const CFIJ=["Padres","Dientes","Barber\u00eda / Esteticien","Peluquer\u00eda","Fondos Indexados","Suscripciones","Gym"];
-const REPDEF={"Ahorros":21,"Ocio":25,"Ropa":8,"Compras":7,"Supermercado":7,"Tabaco":7,"Viajes":7,"Transporte":6,"Otro":6,"Formaci\u00f3n":4,"Apuestas":1,"Regalos":1};
+const REPDEF={"Ahorros":20,"Ocio":31,"Compras":10,"Tabaco":10,"Supermercado":10,"Viajes":9,"Transporte":8,"Formaci\u00f3n":6,"Ropa":7,"Otro":4,"Regalos":3,"Apuestas":2};
 let repCfg=Object.assign({},REPDEF);
 const CEXC=["Ahorros","Fondos Indexados","Ajuste TR","Saldo anterior"];
 function esNeto(x){return CEXC.indexOf(x)<0;}
@@ -335,10 +335,10 @@ function rRepCfg(){
   updRepSum();
 }
 function updRepSum(){
-  let s=0;document.querySelectorAll(".rpri").forEach(i=>{s+=parseFloat(i.value)||0;});
+  let s=0;document.querySelectorAll(".rpri").forEach(i=>{if(i.dataset.cat!=="Ahorros")s+=parseFloat(i.value)||0;});
   s=Math.round(s*10)/10;
   const el=document.getElementById("rpSum");
-  el.textContent="Total asignado: "+s+"%";
+  el.textContent="Reparto de la base: "+s+"%  (Ahorros va aparte, sobre ingresos)";
   el.style.color=s>100?"var(--red)":(s>=99&&s<=100?"var(--green)":"var(--amber)");
   el.textContent+=s>100?"  \u2014 te pasas de 100%":(s<99?"  \u2014 te faltan "+Math.round((100-s)*10)/10+"%":"");
 }
