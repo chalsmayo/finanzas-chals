@@ -212,7 +212,7 @@ font-size:13.5px;font-weight:450;cursor:pointer;font-family:inherit;letter-spaci
 </div>
 <div class="sc">
 <div class="st2">Reparto objetivo</div>
-<div class="sd2">Porcentajes sobre el remanente libre (ingresos del mes menos gastos fijos). Fijos: Padres, Dientes, Fondos Indexados, Netflix, Claude Pro y Barber&#xED;a. Deja a 0 las categor&#xED;as que no quieras controlar.</div>
+<div class="sd2">Porcentajes sobre el remanente libre (ingresos del mes menos gastos fijos). Fijos (se descuentan por lo que apuntes cada mes, no por un importe fijo): Padres, Dientes, Barber&#xED;a, Suscripciones, Fondos Indexados y Gym. Deja a 0 las categor&#xED;as que no quieras controlar.</div>
 <div id="rpL"></div>
 <div id="rpSum" style="font-size:12px;font-weight:700;text-align:right;margin:10px 0 4px">-</div>
 <button class="bp" onclick="svRepCfg()">Guardar reparto</button>
@@ -245,8 +245,8 @@ const EM={"Nomina":"💼","Ahorros":"🏦","Ajuste TR":"🔧","Fondos Indexados"
 const CL=["#6b8afd","#8aa2ff","#a7b8ff","#5d6b8f","#7d8aa8","#9aa4bc","#4ade80","#86d9a4","#fbbf24","#f87171","#c4b5fd","#6ee7d7","#94a3b8","#cbd5e1","#475569"];
 const MN=["","Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 let cy,cm,flt="all",sTyp="Gasto",loc=[],sb=null,mCh=null,pChG=null,pChI=null,editingTxId=null;
-const CFIJ=["Padres","Dientes","Barber\u00eda / Esteticien","Peluquer\u00eda","Fondos Indexados","Suscripciones"];
-const REPDEF={"Ahorros":20,"Ocio":30,"Ropa":8,"Compras":7,"Supermercado":7,"Tabaco":7,"Transporte":6,"Formaci\u00f3n":4,"Otro":5,"Gym":4,"Apuestas":1,"Regalos":1};
+const CFIJ=["Padres","Dientes","Barber\u00eda / Esteticien","Peluquer\u00eda","Fondos Indexados","Suscripciones","Gym"];
+const REPDEF={"Ahorros":21,"Ocio":32,"Ropa":8,"Compras":7,"Supermercado":7,"Tabaco":7,"Transporte":6,"Otro":6,"Formaci\u00f3n":4,"Apuestas":1,"Regalos":1};
 let repCfg=Object.assign({},REPDEF);
 const CEXC=["Ahorros","Fondos Indexados","Ajuste TR"];
 function esNeto(x){return CEXC.indexOf(x)<0;}
@@ -360,7 +360,7 @@ function rReparto(){
   document.getElementById("repBase").innerHTML=(base>0
     ?`Base: ${eur(base)}   (${frm})`
     :"Sin base de reparto este mes")+al;
-  const cats=Object.keys(repCfg).filter(x=>repCfg[x]>0).sort((a,b)=>repCfg[b]-repCfg[a]);
+  const cats=Object.keys(repCfg).filter(x=>repCfg[x]>0&&CFIJ.indexOf(x)<0).sort((a,b)=>repCfg[b]-repCfg[a]);
   if(!cats.length){document.getElementById("repL").innerHTML='<div style="color:var(--text2);font-size:12px;text-align:center;padding:8px">Define los porcentajes en Ajustes</div>';return;}
   document.getElementById("repL").innerHTML=cats.map(x=>{
     const pct=repCfg[x],real=g(x),obj=Math.round((x==="Ahorros"?ing:base)*pct)/100,dif=Math.round((real-obj)*100)/100;
