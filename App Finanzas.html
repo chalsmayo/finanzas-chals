@@ -406,7 +406,6 @@ function mkDesglose(txs,tipo){
   Object.keys(_a).forEach(x=>{if(!esNeto(x))return;const nt=_a[x].net;
     if(tipo==="Gasto"&&nt>0)ab[x]=nt;
     if(tipo==="Ingreso"&&nt<0)ab[x]=-nt;});
-  if(tipo==="Ingreso"){txs.filter(t=>t.categoria==="Ahorros"&&t.tipo==="Ingreso").forEach(t=>{ab["Ahorros"]=(ab["Ahorros"]||0)+t.cantidad;});}
   const pCm=cm===1?12:cm-1,pCy=cm===1?cy-1:cy;
   const ptxs=mTx(pCy,pCm);
   const pb={};
@@ -414,7 +413,6 @@ function mkDesglose(txs,tipo){
   Object.keys(_p).forEach(x=>{if(!esNeto(x))return;const nt=_p[x].net;
     if(tipo==="Gasto"&&nt>0)pb[x]=nt;
     if(tipo==="Ingreso"&&nt<0)pb[x]=-nt;});
-  if(tipo==="Ingreso"){ptxs.filter(t=>t.categoria==="Ahorros"&&t.tipo==="Ingreso").forEach(t=>{pb["Ahorros"]=(pb["Ahorros"]||0)+t.cantidad;});}
   const st=Object.entries(ab).sort((a,b)=>b[1]-a[1]),mx=st.length?st[0][1]:1;
   const mainColor=tipo==="Ingreso"?"var(--green)":"var(--red)";
   const empty=tipo==="Gasto"?"Sin gastos este mes":"Sin ingresos este mes";
@@ -451,7 +449,6 @@ function rIngresos(){
   const txs=mTx(cy,cm);
   const _ai=catAgg(txs),iMap={};
   Object.keys(_ai).forEach(x=>{if(!esNeto(x))return;if(_ai[x].net<0)iMap[x]=-_ai[x].net;});
-  txs.filter(t=>t.categoria==="Ahorros"&&t.tipo==="Ingreso").forEach(t=>{iMap["Ahorros"]=(iMap["Ahorros"]||0)+t.cantidad;});
   const iSr=Object.entries(iMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
   document.getElementById("catBI").innerHTML=mkDesglose(txs,"Ingreso");
   pChI=mkPie(iSr,"pChI",pChI);
