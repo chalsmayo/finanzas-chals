@@ -286,6 +286,9 @@ function ldRep(){
     if(r){const p=JSON.parse(r);
       if(p&&typeof p==="object"&&!("ahorro"in p)&&Object.keys(p).length)repCfg=p;}
   }catch(e){}
+  let nuevas=0;
+  Object.keys(REPDEF).forEach(x=>{if(!(x in repCfg)&&CFIJ.indexOf(x)<0){repCfg[x]=REPDEF[x];nuevas++;}});
+  if(nuevas)try{localStorage.setItem("fc_rep",JSON.stringify(repCfg));}catch(e){}
 }
 let repVista="mes";
 function primerMes(){
@@ -336,7 +339,8 @@ function updRepSum(){
   s=Math.round(s*10)/10;
   const el=document.getElementById("rpSum");
   el.textContent="Total asignado: "+s+"%";
-  el.style.color=s>100?"var(--red)":(s>=99&&s<=100?"var(--green)":"var(--text2)");
+  el.style.color=s>100?"var(--red)":(s>=99&&s<=100?"var(--green)":"var(--amber)");
+  el.textContent+=s>100?"  \u2014 te pasas de 100%":(s<99?"  \u2014 te faltan "+Math.round((100-s)*10)/10+"%":"");
 }
 function svRepCfg(){
   const n={};document.querySelectorAll(".rpri").forEach(i=>{const v=parseFloat(i.value)||0;if(v>0)n[i.dataset.cat]=v;});
