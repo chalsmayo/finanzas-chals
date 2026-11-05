@@ -34,10 +34,10 @@ font-size:14px;font-weight:400;-webkit-font-smoothing:antialiased;padding-bottom
 .bsec{padding:34px 20px 0}
 .blbl{font-size:10px;color:var(--text2);font-weight:500;letter-spacing:1.3px;text-transform:uppercase}
 .bamt{font-size:42px;font-weight:500;letter-spacing:-2.4px;margin-top:9px;line-height:1}
-.brow{display:flex;gap:30px;margin-top:21px}
-.bcard{flex:1}
-.bclbl{font-size:10px;color:var(--text2);letter-spacing:1.1px;text-transform:uppercase;font-weight:500}
-.bcamt{font-size:15.5px;font-weight:500;margin-top:4px;letter-spacing:-.3px}
+.brow{display:flex;gap:8px;margin-top:21px}
+.bcard{flex:1;min-width:0}
+.bclbl{font-size:8.5px;color:var(--text2);letter-spacing:.7px;text-transform:uppercase;font-weight:500;white-space:nowrap}
+.bcamt{font-size:13px;font-weight:500;margin-top:5px;letter-spacing:-.4px;white-space:nowrap}
 
 /* ─── pestañas ─── */
 .tabs{display:flex;gap:20px;padding:26px 20px 0;overflow-x:auto;scrollbar-width:none}
@@ -157,8 +157,10 @@ font-size:13.5px;font-weight:450;cursor:pointer;font-family:inherit;letter-spaci
 <div class="bsec">
 <div class="bmain"><div class="blbl">Saldo disponible</div><div class="bamt" id="bM">&#x20AC;0,00</div></div>
 <div class="brow">
-<div class="bcard inc"><div class="bclbl">Ingresos</div><div class="bcamt" id="tI">&#x20AC;0,00</div></div>
-<div class="bcard exp"><div class="bclbl">Gastos</div><div class="bcamt" id="tE">&#x20AC;0,00</div></div>
+<div class="bcard"><div class="bclbl">Ingresos</div><div class="bcamt" id="tI">&#x20AC;0,00</div></div>
+<div class="bcard"><div class="bclbl">Gastos</div><div class="bcamt" id="tE">&#x20AC;0,00</div></div>
+<div class="bcard"><div class="bclbl">Ahorros</div><div class="bcamt" id="tA">&#x20AC;0,00</div></div>
+<div class="bcard"><div class="bclbl">Inversi&#xF3;n</div><div class="bcamt" id="tV">&#x20AC;0,00</div></div>
 </div>
 </div>
 <div class="tabs">
@@ -259,11 +261,14 @@ function catAgg(txs){
   return a;
 }
 function totMes(txs){
-  const a=catAgg(txs);let inc=0,exp=0;
+  const a=catAgg(txs);let inc=0,exp=0,aho=0,inv=0;
   Object.keys(a).forEach(x=>{const o=a[x];
+    if(x==="Ahorros"){aho+=o.net;return;}
+    if(x==="Fondos Indexados"){inv+=o.net;return;}
     if(!esNeto(x)){inc+=o.i;exp+=o.g;return;}
     if(o.net>0)exp+=o.net;else inc+=-o.net;});
-  return{inc:Math.round(inc*100)/100,exp:Math.round(exp*100)/100};
+  const r=v=>Math.round(v*100)/100;
+  return{inc:r(inc),exp:r(exp),aho:r(aho),inv:r(inv)};
 }
 function realMes(txs){
   const a=catAgg(txs);let inc=0,exp=0;
@@ -325,10 +330,14 @@ function sF(t,btn){flt=t;document.querySelectorAll(".fbtn").forEach(b=>b.classLi
 function render(){
   document.getElementById("mL").textContent=`${MN[cm]} ${cy}`;
   const txs=mTx(cy,cm);
-  const tm=totMes(txs),inc=tm.inc,exp=tm.exp;
+  const tm=totMes(txs),inc=tm.inc,exp=tm.exp,aho=tm.aho,inv=tm.inv;
   document.getElementById("tI").textContent=eur(inc);
   document.getElementById("tE").textContent=eur(exp);
-  document.getElementById("bM").textContent=eur(inc-exp);
+  const elA=document.getElementById("tA");
+  elA.textContent=(aho>0?"+":"")+eur(aho);
+  elA.style.color=aho<0?"var(--amber)":(aho>0?"var(--green)":"var(--text)");
+  document.getElementById("tV").textContent=eur(inv);
+  document.getElementById("bM").textContent=eur(Math.round((inc-exp-aho-inv)*100)/100);
   document.getElementById("txC").textContent=txs.length+" mov.";
   rReparto();
   rTx();
